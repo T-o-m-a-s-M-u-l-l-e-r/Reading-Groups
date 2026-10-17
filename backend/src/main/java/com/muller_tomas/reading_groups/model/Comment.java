@@ -25,10 +25,10 @@ public class Comment {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(name = "text_section", nullable = false, length = 100)
+    @Column(name = "text_section", nullable = false, columnDefinition = "TEXT")
     private String textSection;
 
-    @Column(name = "comment_content", nullable = false, length = 100)
+    @Column(name = "comment_content", nullable = false, columnDefinition = "TEXT")
     private String commentContent;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

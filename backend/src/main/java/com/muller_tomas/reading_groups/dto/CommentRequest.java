@@ -10,11 +10,11 @@ public class CommentRequest {
     private Integer categoryId;
 
     @NotBlank(message = "Text section cannot be blank")
-    @Size(max = 100, message = "Text section cannot exceed 100 characters")
+    @Size(max = 2000, message = "Text section is too long")
     private String textSection;
 
     @NotBlank(message = "Comment content cannot be blank")
-    @Size(max = 100, message = "Comment content cannot exceed 100 characters")
+    @Size(max = 2000, message = "Comment content is too long")
     private String commentContent;
 
     @NotNull(message = "Page number is required")

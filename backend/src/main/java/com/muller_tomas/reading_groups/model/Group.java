@@ -26,10 +26,10 @@ public class Group {
 	@Column(name = "group_id")
 	private int id;
 
-	@Column(name = "reading_text_path", length = 100, nullable = false)
+	@Column(name = "reading_text_path", columnDefinition = "TEXT", nullable = false)
 	private String readingTextPath;
 
-	@Column(name = "group_name", length = 20, nullable = false)
+	@Column(name = "group_name", length = 100, nullable = false)
 	private String groupName;
 	
 	@Column(name = "created_at", length = 100, nullable = false)
