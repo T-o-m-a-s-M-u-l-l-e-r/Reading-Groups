@@ -4,6 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.HexFormat;
+import java.util.UUID;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -50,7 +53,7 @@ public class JwtTokenProvider {
 		Date now = new Date();
 		Date validity = new Date(now.getTime() + tokenType.getValidityDuration().toMillis());
 
-		return Jwts.builder().claim(tokenTypeClaim, tokenType.toString()).subject(String.valueOf(userId)).issuedAt(now)
+		return Jwts.builder().id(UUID.randomUUID().toString()).claim(tokenTypeClaim, tokenType.toString()).subject(String.valueOf(userId)).issuedAt(now)
 				.expiration(validity).signWith(signingKey).compact();
 	}
 
@@ -64,6 +67,20 @@ public class JwtTokenProvider {
 		Claims claims = Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
 		return Integer.valueOf(claims.getSubject());
 	}
+
+    public Instant getExpiration(String token) {
+        return Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token)
+                .getPayload().getExpiration().toInstant();
+    }
+
+    public String hashToken(String token) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
 
 	public boolean isTokenValid(String token) {
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import com.muller_tomas.reading_groups.repository.RefreshSessionRepository;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -37,9 +38,12 @@ public class UserServiceTest {
 	@Mock
 	private BCryptPasswordEncoder passwordEncoder;
 
+	@Mock
+	private RefreshSessionRepository refreshSessionRepository;
+
 	@BeforeEach
 	public void setUp() {
-		userService = new UserService(userRepository, passwordEncoder, jwtTokenProvider);
+		userService = new UserService(userRepository, passwordEncoder, jwtTokenProvider, refreshSessionRepository);
 	}
 
 	@Test

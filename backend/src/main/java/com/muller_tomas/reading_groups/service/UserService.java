@@ -3,6 +3,9 @@ package com.muller_tomas.reading_groups.service;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.muller_tomas.reading_groups.model.RefreshSession;
+import com.muller_tomas.reading_groups.repository.RefreshSessionRepository;
 
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
@@ -18,14 +21,17 @@ public class UserService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final UserRepository userRepository;
 	private final BCryptPasswordEncoder passwordEncoder;
+	private final RefreshSessionRepository refreshSessionRepository;
 
 	public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
-			JwtTokenProvider jwtTokenProvider) {
+			JwtTokenProvider jwtTokenProvider, RefreshSessionRepository refreshSessionRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.refreshSessionRepository = refreshSessionRepository;
 	}
 
+	@Transactional
 	public TokenPairResponse createUser(RegisterRequest registerRequest) throws DuplicateUserException {
 
 		if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
@@ -49,6 +55,8 @@ public class UserService {
 		String refreshToken = jwtTokenProvider.createToken(userId, TokenType.REFRESH);
 		String accessToken = jwtTokenProvider.createToken(userId, TokenType.ACCESS);
 
+		refreshSessionRepository.save(new RefreshSession(createdUser, jwtTokenProvider.hashToken(refreshToken),
+				jwtTokenProvider.getExpiration(refreshToken)));
 		return new TokenPairResponse(accessToken, refreshToken);
 	}
 
@@ -56,7 +64,7 @@ public class UserService {
 		return userRepository.findByUsername(login).or(() -> userRepository.findByEmail(login))
 				.orElseThrow(() -> new UserNotFoundException("User with specified login not found"));
 	}
-	
+
 	public User findUserByUserId(int userId) {
 		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User with specified id not found"));
 	}
