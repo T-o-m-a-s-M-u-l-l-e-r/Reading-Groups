@@ -9,13 +9,17 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.muller_tomas.reading_groups.exception.UserNotFoundException;
 import com.muller_tomas.reading_groups.model.EmailVerification;
@@ -25,99 +29,129 @@ import com.muller_tomas.reading_groups.repository.UserRepository;
 
 @Service
 public class EmailVerificationService {
-    private final UserRepository userRepository;
-    private final EmailVerificationRepository verificationRepository;
-    private final Duration cooldown;
-    private final Duration lifetime;
-    private final SecureRandom random = new SecureRandom();
+	private static final Logger logger = LoggerFactory.getLogger(EmailVerificationService.class);
 
-    public EmailVerificationService(UserRepository userRepository,
-            EmailVerificationRepository verificationRepository,
-            @Value("${app.email-verification.cooldown:PT2M}") Duration cooldown,
-            @Value("${app.email-verification.lifetime:PT24H}") Duration lifetime) {
-        if (cooldown.isNegative() || lifetime.isNegative() || lifetime.isZero()) {
-            throw new IllegalArgumentException("Invalid email verification durations");
-        }
-        this.userRepository = userRepository;
-        this.verificationRepository = verificationRepository;
-        this.cooldown = cooldown;
-        this.lifetime = lifetime;
-    }
+	private final EmailService emailService;
+	private final String verificationPageUrl;
+	private final UserRepository userRepository;
+	private final EmailVerificationRepository emailVerificationRepository;
+	private final Duration cooldown;
+	private final Duration lifetime;
+	private final SecureRandom secureRandom = new SecureRandom();
 
-    @Transactional
-    public void requestVerification(int userId) {
-        User user = lockUser(userId);
-        if (user.isEmailVerified()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already verified");
-        }
-        Instant now = Instant.now();
-        EmailVerification verification = verificationRepository.findById(userId).orElse(null);
-        if (verification != null && now.isBefore(verification.getRequestedAt().plus(cooldown))) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Please wait before requesting another verification email");
-        }
+	public EmailVerificationService(UserRepository userRepository,
+			EmailVerificationRepository emailVerificationRepository, EmailService emailService,
+			@Value("${app.email-verification.page-url}") String verificationPageUrl,
+			@Value("${app.email-verification.cooldown:PT2M}") Duration cooldown,
+			@Value("${app.email-verification.lifetime:PT24H}") Duration lifetime) {
+		if (cooldown.isNegative() || lifetime.isNegative() || lifetime.isZero()) {
+			throw new IllegalArgumentException("Invalid email verification durations");
+		}
+		this.userRepository = userRepository;
+		this.emailVerificationRepository = emailVerificationRepository;
+		this.emailService = emailService;
+		this.verificationPageUrl = verificationPageUrl;
+		this.cooldown = cooldown;
+		this.lifetime = lifetime;
+	}
 
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        String tokenHash = hashToken(token);
-        if (verification == null) {
-            verification = new EmailVerification(user, tokenHash, now, now.plus(lifetime));
-        } else {
-            verification.replaceToken(tokenHash, now, now.plus(lifetime));
-        }
-        verificationRepository.save(verification);
-        String email = user.getEmail();
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                sendVerificationEmail(email, token);
-            }
-        });
-    }
+	@Transactional
+	public void requestVerification(int userId) {
+		User user = lockUser(userId);
+		if (user.isEmailVerified()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already verified");
+		}
 
-    @Transactional
-    public void verify(String token) {
-        if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) {
-            throw invalidToken();
-        }
-        String tokenHash = hashToken(token);
-        int userId = verificationRepository.findUserIdByTokenHash(tokenHash)
-                .orElseThrow(this::invalidToken);
-        User user = lockUser(userId);
-        // Re-read after locking: a concurrent resend may have replaced the token.
-        EmailVerification verification = verificationRepository.findById(userId)
-                .orElseThrow(this::invalidToken);
-        if (user.isEmailVerified() || !tokenHash.equals(verification.getTokenHash())
-                || !verification.getExpiresAt().isAfter(Instant.now())) {
-            throw invalidToken();
-        }
-        user.setEmailVerifiedAt(Instant.now());
-        userRepository.save(user);
-        verificationRepository.delete(verification);
-    }
+		Instant now = Instant.now();
+		EmailVerification emailVerification = emailVerificationRepository.findById(userId).orElse(null);
+		if (emailVerification != null && now.isBefore(emailVerification.getRequestedAt().plus(cooldown))) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Please wait before requesting another verification email");
+		}
 
-    private User lockUser(int userId) {
-        return userRepository.findByIdForUpdate(userId)
-                .orElseThrow(() -> new UserNotFoundException("User with specified id not found"));
-    }
+		byte[] tokenBytes = new byte[32];
+		secureRandom.nextBytes(tokenBytes);
+		String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 
-    private ResponseStatusException invalidToken() {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification link is invalid or expired");
-    }
+		String tokenHash = hashToken(token);
+		if (emailVerification == null) {
+			emailVerification = new EmailVerification(user, tokenHash, now, now.plus(lifetime));
+		} else {
+			emailVerification.replaceToken(tokenHash, now, now.plus(lifetime));
+		}
 
-    private String hashToken(String token) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is unavailable", e);
-        }
-    }
+		emailVerificationRepository.save(emailVerification);
 
-    private void sendVerificationEmail(String email, String token) {
-        // TODO: Deliver an email to this address containing the frontend link
-        // /verify-email?token=<token>. Do not log or return the raw token.
-        // This runs after commit; the future delivery implementation must handle failures/retries.
-    }
+		String email = user.getEmail();
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					sendVerificationEmail(email, token);
+				} catch (MailException exception) {
+					// The account and token are already committed; the user can request a resend.
+					// Avoid logging the exception, which may contain the message or credentials.
+					logger.warn("Verification email delivery failed for user {}", userId);
+				}
+			}
+		});
+	}
+
+	@Transactional
+	public void verify(String token) {
+		if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) {
+			throw invalidToken();
+		}
+
+		String tokenHash = hashToken(token);
+		int userId = emailVerificationRepository.findUserIdByTokenHash(tokenHash)
+				.orElseThrow(() -> invalidToken());
+		User user = lockUser(userId);
+
+		// Re-read after locking: a concurrent resend may have replaced the token.
+		EmailVerification emailVerification = emailVerificationRepository.findById(userId)
+				.orElseThrow(() -> invalidToken());
+		if (user.isEmailVerified() || !tokenHash.equals(emailVerification.getTokenHash())
+				|| !emailVerification.getExpiresAt().isAfter(Instant.now())) {
+			throw invalidToken();
+		}
+
+		user.setEmailVerifiedAt(Instant.now());
+		userRepository.save(user);
+		emailVerificationRepository.delete(emailVerification);
+	}
+
+	private User lockUser(int userId) {
+		return userRepository.findByIdForUpdate(userId)
+				.orElseThrow(() -> new UserNotFoundException("User with specified id not found"));
+	}
+
+	private ResponseStatusException invalidToken() {
+		return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification link is invalid or expired");
+	}
+
+	private String hashToken(String token) {
+		try {
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+					.digest(token.getBytes(StandardCharsets.UTF_8)));
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 is unavailable", e);
+		}
+	}
+
+	private void sendVerificationEmail(String email, String token) {
+		String verificationLink = UriComponentsBuilder.fromUriString(verificationPageUrl)
+				.queryParam("token", token)
+				.build()
+				.encode()
+				.toUriString();
+		String subject = "Verify your Reading Groups email address";
+		String body = "Welcome to Reading Groups!\n\n"
+				+ "Confirm your email address by opening this link:\n"
+				+ verificationLink + "\n\n"
+				+ "This link expires in " + lifetime.toHours() + " hours.\n"
+				+ "If you did not create this account, you can ignore this email.";
+
+		emailService.sendEmail(email, subject, body);
+	}
 }
