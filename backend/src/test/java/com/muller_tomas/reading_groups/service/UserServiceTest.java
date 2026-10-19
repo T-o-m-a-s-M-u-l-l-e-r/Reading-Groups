@@ -29,6 +29,8 @@ import com.muller_tomas.reading_groups.token.JwtTokenProvider.TokenType;
 public class UserServiceTest {
 
 	private UserService userService;
+    @Mock
+    private EmailVerificationService emailVerificationService;
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
 
@@ -43,7 +45,7 @@ public class UserServiceTest {
 
 	@BeforeEach
 	public void setUp() {
-		userService = new UserService(userRepository, passwordEncoder, jwtTokenProvider, refreshSessionRepository);
+		userService = new UserService(userRepository, passwordEncoder, jwtTokenProvider, refreshSessionRepository, emailVerificationService);
 	}
 
 	@Test
@@ -85,6 +87,7 @@ public class UserServiceTest {
 
 		TokenPairResponse tokenPairResponse = userService.createUser(registerRequest);
 		assertEquals(TestDataFactory.getTokenPairResponse(), tokenPairResponse);
+        verify(emailVerificationService).requestVerification(savedUser.getId());
 		
 		verify(userRepository, times(1)).findByUsername(registerRequest.getUsername());
 		verify(userRepository, times(1)).findByEmail(registerRequest.getEmail());

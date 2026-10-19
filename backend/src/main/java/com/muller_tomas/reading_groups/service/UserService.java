@@ -18,13 +18,16 @@ import com.muller_tomas.reading_groups.token.JwtTokenProvider.TokenType;
 
 @Service
 public class UserService {
+	private final EmailVerificationService emailVerificationService;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final UserRepository userRepository;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final RefreshSessionRepository refreshSessionRepository;
 
 	public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
-			JwtTokenProvider jwtTokenProvider, RefreshSessionRepository refreshSessionRepository) {
+			JwtTokenProvider jwtTokenProvider, RefreshSessionRepository refreshSessionRepository,
+			EmailVerificationService emailVerificationService) {
+		this.emailVerificationService = emailVerificationService;
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
@@ -51,6 +54,7 @@ public class UserService {
 
 		User createdUser = userRepository.save(user);
 		int userId = createdUser.getId();
+		emailVerificationService.requestVerification(userId);
 
 		String refreshToken = jwtTokenProvider.createToken(userId, TokenType.REFRESH);
 		String accessToken = jwtTokenProvider.createToken(userId, TokenType.ACCESS);

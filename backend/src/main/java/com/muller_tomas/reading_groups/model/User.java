@@ -1,5 +1,6 @@
 package com.muller_tomas.reading_groups.model;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +29,9 @@ public class User {
 
 	@Column(name = "password_hash", length = 100, nullable = false, unique = false)
 	private String passwordHash;
+
+	@Column(name = "email_verified_at")
+	private Instant emailVerifiedAt;
 
 	@ManyToMany(mappedBy = "users")
 	private Set<Group> groups = new HashSet<>();
@@ -81,6 +85,18 @@ public class User {
 
 	public void setPasswordHash(String passwordHash) {
 		this.passwordHash = passwordHash;
+	}
+
+	public Instant getEmailVerifiedAt() {
+		return emailVerifiedAt;
+	}
+
+	public void setEmailVerifiedAt(Instant emailVerifiedAt) {
+		this.emailVerifiedAt = emailVerifiedAt;
+	}
+
+	public boolean isEmailVerified() {
+		return emailVerifiedAt != null;
 	}
 
 	public Set<Group> getGroups() {
