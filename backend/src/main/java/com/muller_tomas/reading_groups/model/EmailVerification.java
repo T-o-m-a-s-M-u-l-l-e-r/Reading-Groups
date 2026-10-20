@@ -23,7 +23,7 @@ public class EmailVerification {
 	@JoinColumn(name = "user_id")
 	private User user;
 
-	@Column(name = "token_hash", nullable = false, unique = true, length = 64, columnDefinition = "CHAR(64)")
+	@Column(name = "token_hash", nullable = false, unique = true, length = 64)
 	private String tokenHash;
 
 	@Column(name = "requested_at", nullable = false)

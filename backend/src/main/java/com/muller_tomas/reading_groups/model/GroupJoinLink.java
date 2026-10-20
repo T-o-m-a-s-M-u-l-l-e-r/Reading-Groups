@@ -23,7 +23,7 @@ public class GroupJoinLink {
 	@JoinColumn(name = "group_id")
 	private Group group;
 
-	@Column(name = "token_hash", nullable = false, unique = true, length = 64, columnDefinition = "CHAR(64)")
+	@Column(name = "token_hash", nullable = false, unique = true, length = 64)
 	private String tokenHash;
 
 	@Column(name = "issued_at", nullable = false)
