@@ -4,7 +4,7 @@ import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +31,7 @@ public class InviteController {
 	@Operation(summary = "Get my invitations", description = "Retrieve pending group invitations addressed to the authenticated user.")
 	@ApiResponse(responseCode = "200", description = "Invitations returned")
 	@ApiResponse(responseCode = "401", description = "Authentication required")
-	public ResponseEntity<Set<InviteResponse>> getUserInvites() {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Set<InviteResponse>> getUserInvites(@AuthenticationPrincipal Integer userId) {
 		return ResponseEntity.ok(inviteService.getUserInvites(userId));
 	}
 	@PostMapping("/api/groups/{groupId}/invites")
@@ -41,8 +40,8 @@ public class InviteController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User is not the group administrator")
 	@ApiResponse(responseCode = "404", description = "Group or user not found")
-	public ResponseEntity<InviteResponse> sendInvite(@PathVariable int groupId, @RequestParam int userId) {
-		int administratorId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<InviteResponse> sendInvite(@PathVariable int groupId, @RequestParam int userId,
+			@AuthenticationPrincipal Integer administratorId) {
 		InviteResponse inviteResponse = inviteService.createInvite(administratorId, groupId, userId);
 		return new ResponseEntity<InviteResponse>(inviteResponse, HttpStatus.CREATED);
 	}
@@ -52,8 +51,8 @@ public class InviteController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "Invitation belongs to another user")
 	@ApiResponse(responseCode = "404", description = "Invitation not found")
-	public ResponseEntity<Void> rejectInvite(@PathVariable int inviteId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Void> rejectInvite(@PathVariable int inviteId,
+			@AuthenticationPrincipal Integer userId) {
 		inviteService.deleteInvite(userId, inviteId);
 		return ResponseEntity.noContent().build();
 	}
@@ -63,8 +62,8 @@ public class InviteController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "Invitation belongs to another user")
 	@ApiResponse(responseCode = "404", description = "Invitation not found")
-	public ResponseEntity<Void> acceptInvite(@PathVariable int inviteId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Void> acceptInvite(@PathVariable int inviteId,
+			@AuthenticationPrincipal Integer userId) {
 		inviteService.acceptInvite(userId, inviteId);
 		return ResponseEntity.noContent().build();
 	}

@@ -4,7 +4,7 @@ import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,8 +35,8 @@ public class CommentController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User cannot access this group")
 	@ApiResponse(responseCode = "404", description = "Group not found")
-	public ResponseEntity<Set<CommentResponse>> getGroupComments(@PathVariable int groupId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Set<CommentResponse>> getGroupComments(@PathVariable int groupId,
+			@AuthenticationPrincipal Integer userId) {
 		Set<CommentResponse> comments = commentService.getGroupComments(userId, groupId);
 		return ResponseEntity.ok(comments);
 	}
@@ -46,8 +46,8 @@ public class CommentController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User cannot access this comment")
 	@ApiResponse(responseCode = "404", description = "Comment not found")
-	public ResponseEntity<CommentResponse> getComment(@PathVariable int commentId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<CommentResponse> getComment(@PathVariable int commentId,
+			@AuthenticationPrincipal Integer userId) {
 		return ResponseEntity.ok(commentService.getComment(userId, commentId));
 	}
 	@DeleteMapping("/api/comments/{commentId}")
@@ -56,8 +56,8 @@ public class CommentController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User cannot delete this comment")
 	@ApiResponse(responseCode = "404", description = "Comment not found")
-	public ResponseEntity<Void> deleteComment(@PathVariable int commentId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Void> deleteComment(@PathVariable int commentId,
+			@AuthenticationPrincipal Integer userId) {
 		commentService.deleteComment(userId, commentId);
 		return ResponseEntity.noContent().build();
 	}
@@ -69,8 +69,8 @@ public class CommentController {
 	@ApiResponse(responseCode = "403", description = "User cannot access this group")
 	@ApiResponse(responseCode = "404", description = "Group not found")
 	public ResponseEntity<CommentResponse> addComment(@PathVariable int groupId,
-			@RequestBody @Valid CommentRequest commentRequest) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+			@RequestBody @Valid CommentRequest commentRequest,
+			@AuthenticationPrincipal Integer userId) {
 		CommentResponse commentResponse = commentService.addComment(userId, groupId, commentRequest);
 		return new ResponseEntity<CommentResponse>(commentResponse, HttpStatus.CREATED);
 	}
