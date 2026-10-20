@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -21,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.muller_tomas.reading_groups.exception.EmailDeliveryException;
 import com.muller_tomas.reading_groups.exception.UserNotFoundException;
 import com.muller_tomas.reading_groups.model.EmailVerification;
 import com.muller_tomas.reading_groups.model.User;
@@ -88,7 +88,7 @@ public class EmailVerificationService {
 			public void afterCommit() {
 				try {
 					sendVerificationEmail(email, token);
-				} catch (MailException exception) {
+				} catch (EmailDeliveryException exception) {
 					// The account and token are already committed; the user can request a resend.
 					// Avoid logging the exception, which may contain the message or credentials.
 					logger.warn("Verification email delivery failed for user {}", userId);

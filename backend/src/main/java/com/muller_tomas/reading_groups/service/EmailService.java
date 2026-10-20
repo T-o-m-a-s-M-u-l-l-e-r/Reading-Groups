@@ -1,9 +1,12 @@
 package com.muller_tomas.reading_groups.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import com.muller_tomas.reading_groups.exception.EmailDeliveryException;
 
 @Service
 public class EmailService {
@@ -22,6 +25,10 @@ public class EmailService {
 		message.setSubject(subject);
 		message.setText(body);
 
-		javaMailSender.send(message);
+		try {
+			javaMailSender.send(message);
+		} catch (MailException exception) {
+			throw new EmailDeliveryException("Email delivery through SMTP failed", exception);
+		}
 	}
 }
