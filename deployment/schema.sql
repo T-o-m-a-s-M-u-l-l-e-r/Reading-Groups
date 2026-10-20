@@ -39,6 +39,14 @@ CREATE TABLE GROUPS (
     FOREIGN KEY (administrator_user_id) REFERENCES USERS(user_id)
 );
 
+CREATE TABLE GROUP_JOIN_LINKS (
+    group_id INT PRIMARY KEY REFERENCES GROUPS(group_id) ON DELETE CASCADE,
+    token_hash CHAR(64) UNIQUE NOT NULL,
+    issued_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMPTZ NOT NULL,
+    CHECK (expires_at > issued_at)
+);
+
 CREATE TABLE CATEGORIES (
     category_id SERIAL PRIMARY KEY,
     category_label VARCHAR(100) UNIQUE NOT NULL

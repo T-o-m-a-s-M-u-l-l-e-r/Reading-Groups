@@ -7,7 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,8 +37,7 @@ public class GroupController {
 	@ApiResponse(responseCode = "200", description = "Groups returned")
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "404", description = "User not found")
-	public ResponseEntity<Set<GroupResponse>> getUserGroups() {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Set<GroupResponse>> getUserGroups(@AuthenticationPrincipal Integer userId) {
 		return ResponseEntity.ok(groupService.getUserGroups(userId));
 	}
 	@GetMapping("/api/groups/{groupId}/reading-text")
@@ -47,8 +46,8 @@ public class GroupController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User is not a group member")
 	@ApiResponse(responseCode = "404", description = "Group or stored PDF not found")
-	public ResponseEntity<Resource> getGroupReadingText(@PathVariable int groupId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Resource> getGroupReadingText(@PathVariable int groupId,
+			@AuthenticationPrincipal Integer userId) {
 		Resource resource = groupService.getReadingText(userId, groupId);
 		return ResponseEntity.ok()
 		        .contentType(MediaType.APPLICATION_PDF)
@@ -64,8 +63,8 @@ public class GroupController {
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "403", description = "User is not a group member")
 	@ApiResponse(responseCode = "404", description = "User or group not found")
-	public ResponseEntity<Set<UserResponse>> getGroupMembers(@PathVariable int groupId) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<Set<UserResponse>> getGroupMembers(@PathVariable int groupId,
+			@AuthenticationPrincipal Integer userId) {
 		return ResponseEntity.ok(groupService.getGroupMembers(userId, groupId));
 	}
 	@PostMapping(path = "/api/groups", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -74,8 +73,8 @@ public class GroupController {
 	@ApiResponse(responseCode = "400", description = "Invalid request or PDF")
 	@ApiResponse(responseCode = "401", description = "Authentication required")
 	@ApiResponse(responseCode = "500", description = "PDF could not be stored")
-	public ResponseEntity<GroupResponse> createGroup(@Valid @ModelAttribute GroupCreationRequest groupCreationRequest) {
-		int userId = (int) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+	public ResponseEntity<GroupResponse> createGroup(@Valid @ModelAttribute GroupCreationRequest groupCreationRequest,
+			@AuthenticationPrincipal Integer userId) {
 		GroupResponse groupResponse = groupService.createGroup(userId, groupCreationRequest);
 		return new ResponseEntity<GroupResponse>(groupResponse, HttpStatus.CREATED);
 	}

@@ -72,7 +72,7 @@ public class InviteService {
 		}
 		
 		Group group = invite.getGroup();
-		group.getUsers().add(recipient);
+		groupService.addMember(group.getId(), recipient.getId());
 		
 		inviteRepository.delete(invite);
 	}
