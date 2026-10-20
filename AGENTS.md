@@ -75,3 +75,44 @@ Avoid unrelated formatting changes.
 - Respect the project's formatter configuration.
 - If formatter configuration conflicts with these instructions, point out
   the conflict rather than repeatedly undoing formatter changes.
+
+# Configuration principles
+
+- Give each setting one authoritative source; other layers should pass it
+  through rather than duplicate it.
+- Keep backend-only settings shared across environments hardcoded in
+  application.properties.
+- Keep shared infrastructure settings in the common Compose file and isolate
+  local and production differences in their respective overrides.
+- Define environment-specific values and secrets explicitly in .env or the
+  shell. Avoid fallback values that hide missing configuration.
+- Keep Compose variable forwarding straightforward, without conditional
+  defaults or environment-specific value selection.
+- Document every environment variable in .env.example, including intentionally
+  empty values and settings unused in one environment. Use placeholders for
+  secrets; do not commit real .env files or credentials.
+
+# CI/CD and environment principles
+
+- Keep local and production behavior aligned where it matters, especially
+  public routing and access restrictions.
+- Use the reverse proxy as the normal app entry point. Keep local developer
+  access on separate localhost-only ports, without exposing those ports in
+  production.
+- When changing Compose structure or deployment requirements, update the CI/CD
+  commands and documentation together.
+- Account explicitly for files required on the deployment host. Pulling images
+  does not update Compose files, configuration, or database schemas.
+- Distinguish build and test validation from runtime or deployment validation;
+  report what was actually checked and any remaining gaps.
+
+# Documentation and collaboration principles
+
+- Keep README setup instructions and configuration examples portable, using
+  generic domains, accounts, credentials, and deployment paths.
+- Preserve screenshots and useful project presentation. Anonymize specific
+  deployment details without removing unrelated content.
+- Make conservative, focused edits that follow existing conventions. Avoid
+  unrelated cleanup or restructuring.
+- Treat brainstorming as discussion, not authorization to change files.
+  Respect explicit limits on running builds, tests, services, or external actions.

@@ -1,14 +1,14 @@
+# Shared configuration. Combine with compose.local.yaml or compose.prod.yaml.
 services:
-
   caddy:
-    build: frontend
+    environment:
+      APP_BASE_URL: ${APP_BASE_URL}
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./frontend/Caddyfile.local:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
 
@@ -32,13 +32,21 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    build: backend
     restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      APP_BASE_URL: ${APP_BASE_URL}
+      EMAIL_FROM: ${EMAIL_FROM}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS_ENABLE}
+      SMTP_STARTTLS_REQUIRED: ${SMTP_STARTTLS_REQUIRED}
     volumes:
       - file_uploads:/app/uploads
 

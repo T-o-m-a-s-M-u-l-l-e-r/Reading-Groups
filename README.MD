@@ -4,8 +4,6 @@ A web application for creating reading groups, sharing PDF documents, and discus
 
 Built with React, TypeScript, Spring Boot, and PostgreSQL. Containerized with Docker and deployed using GitHub Actions.
 
-**[Live application](https://reading-groups.site)**
-
 ![Reading Groups](screenshots/RG_title.png)
 
 ## Features
@@ -63,35 +61,44 @@ In production, Caddy serves the frontend, proxies API requests to Spring Boot, a
 
 Clone the repository and navigate to its root directory.
 
-Create a `.env` file with the required configuration:
-
-```env
-DB_NAME=reading_database
-DB_USER=database_user
-DB_PASSWORD=your_database_password
-JWT_SECRET=your_jwt_secret
-```
+Copy `.env.example` to `.env` and fill in every active variable. The example contains explicit local
+settings, including empty SMTP credentials because Mailpit does not require authentication. Shell
+variables may override `.env`; neither Compose nor the backend supplies environment-specific defaults.
 
 Use a securely generated JWT secret.
 
 Build and start the application:
 
 ```bash
-docker compose up -d --build
+docker compose -f compose.yaml -f compose.local.yaml up -d --build
 ```
 
-The application will be available at **http://localhost**.
+The application will be available at **http://localhost**. `APP_BASE_URL` is shared by Caddy and the backend;
+use an origin without a trailing slash or path.
+
+Local email goes to Mailpit instead of real recipients; no Resend key is needed. Open
+**http://localhost:8025** to inspect captured messages. The verification and group-join frontend pages
+still need to be implemented.
+
+Developer access is bound to your machine's loopback interface:
+
+- Backend: `http://localhost:8080`
+- PostgreSQL: `localhost:5432`, using the database credentials in `.env`
+- Mailpit: `http://localhost:8025`
+
+Use the normal Caddy address to test public routing. Swagger/OpenAPI return 404 through Caddy in both
+environments; the direct backend port provides local access. Mailpit SMTP stays internal at `mailpit:1025`.
 
 To view the logs:
 
 ```bash
-docker compose logs -f
+docker compose -f compose.yaml -f compose.local.yaml logs -f
 ```
 
 To stop the containers:
 
 ```bash
-docker compose down
+docker compose -f compose.yaml -f compose.local.yaml down
 ```
 
 Database data and uploaded files are preserved in Docker volumes.
@@ -116,8 +123,8 @@ The REST API is documented using Springdoc OpenAPI and Swagger UI. Endpoints cov
 
 When running the application locally with Docker Compose:
 
-- [Swagger UI](http://localhost/swagger-ui/index.html)
-- [OpenAPI specification](http://localhost/v3/api-docs)
+- [Swagger UI](http://localhost:8080/swagger-ui/index.html)
+- [OpenAPI specification](http://localhost:8080/v3/api-docs)
 
 ## Testing
 
@@ -136,10 +143,41 @@ npm run lint
 
 ## Deployment
 
-The application is deployed to a VPS using Docker Compose.
+The application can be deployed to a VPS using Docker Compose.
 
 GitHub Actions runs the backend tests, builds the frontend and backend Docker images, publishes them to GitHub Container Registry, and deploys updated images to the VPS.
 
-The production configuration is defined in `compose.prod.yaml`. Caddy handles HTTPS and reverse proxying, while PostgreSQL and uploaded files use persistent Docker volumes.
+Configure the container image names, deployment directory, and repository secrets for your own environment.
 
-**[reading-groups.site](https://reading-groups.site)**
+`compose.yaml` defines shared services, volumes, and environment forwarding. Combine it with
+`compose.local.yaml` for local builds, Mailpit, and developer ports, or `compose.prod.yaml` for published
+production images. The base file is not intended to run by itself. Caddy handles HTTPS and reverse proxying, while PostgreSQL and uploaded files use persistent Docker volumes.
+
+Start from `.env.example` on the VPS, retaining the database and JWT variables, and replace the local
+settings with your production values. For example:
+
+```env
+APP_BASE_URL=https://app.example.com
+EMAIL_FROM="Reading Groups <no-reply@notifications.example.com>"
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USERNAME=resend
+SMTP_PASSWORD=your_resend_api_key
+SMTP_AUTH=true
+SMTP_STARTTLS_ENABLE=true
+SMTP_STARTTLS_REQUIRED=true
+WEB_IMAGE=ghcr.io/your-account/reading-groups-web:latest
+API_IMAGE=ghcr.io/your-account/reading-groups-api:latest
+```
+
+Production sends through Resend SMTP on port 587 with authentication and required STARTTLS. Only
+Caddy publishes ports; the backend and database remain internal, and Mailpit is not included.
+Use both Compose files for deployment:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml pull
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+```
+
+Update both Compose files on the VPS and deploy rebuilt images to apply these changes. CI pulls images
+but does not copy updated Compose files or `.env` to the VPS.

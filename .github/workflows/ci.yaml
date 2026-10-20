@@ -103,5 +103,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/reading-groups-api
-            docker compose -f compose.prod.yaml pull
-            docker compose -f compose.prod.yaml up -d
+            docker compose -f compose.yaml -f compose.prod.yaml pull
+            docker compose -f compose.yaml -f compose.prod.yaml up -d
