@@ -7,6 +7,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.muller_tomas.reading_groups.dto.GroupCreationRequest;
 import com.muller_tomas.reading_groups.dto.GroupResponse;
@@ -77,6 +78,19 @@ public class GroupService {
 		users.add(administratorUser);
 		Group group = groupRepository
 				.save(new Group(filePath, administratorUser, groupCreationRequest.getGroupName(), users));
+		return mapperHelper.mapGroup(group);
+	}
+
+	@Transactional
+	public GroupResponse addMember(int groupId, int userId) {
+		Group group = groupRepository.findByIdForUpdate(groupId)
+				.orElseThrow(() -> new GroupNotFoundException("Group with specified id not found"));
+		User user = userService.findUserByUserId(userId);
+
+		if (group.getUsers().add(user)) {
+			groupRepository.save(group);
+		}
+
 		return mapperHelper.mapGroup(group);
 	}
 
