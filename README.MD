@@ -77,8 +77,8 @@ The application will be available at **http://localhost**. `APP_BASE_URL` is sha
 use an origin without a trailing slash or path.
 
 Local email goes to Mailpit instead of real recipients; no Resend key is needed. Open
-**http://localhost:8025** to inspect captured messages. Verification links open a confirmation page. The group-join frontend page
-still needs to be implemented.
+**http://localhost:8025** to inspect captured messages. Verification links open a confirmation page.
+Group join links guide users through login or registration before joining.
 
 Developer access is bound to your machine's loopback interface:
 

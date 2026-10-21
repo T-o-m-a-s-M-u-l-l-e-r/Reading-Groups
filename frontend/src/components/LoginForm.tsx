@@ -1,6 +1,7 @@
 import { useContext, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AuthContext } from "../auth/AuthContext"
+import { useJoinDestination } from "../auth/useJoinDestination"
 
 type LoginFormProps = {
   setLoading: (loading: boolean) => void
@@ -9,6 +10,7 @@ type LoginFormProps = {
 
 function LoginForm({ loading, setLoading }: LoginFormProps) {
   const navigate = useNavigate()
+  const { destination } = useJoinDestination()
   const auth = useContext(AuthContext)
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
@@ -39,7 +41,7 @@ function LoginForm({ loading, setLoading }: LoginFormProps) {
 
       auth.setAccessToken(data.accessToken)
       auth.setRefreshToken(data.refreshToken)
-      navigate("/")
+      navigate(destination)
     } finally {
       setLoading(false)
     }

@@ -1,0 +1,63 @@
+.group-join-link {
+  padding: 1rem;
+  border-top: 1px solid #ddd;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  max-height: 45vh;
+}
+
+.group-join-link h4 {
+  margin: 0 0 0.5rem;
+}
+
+.group-join-link p {
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.group-join-link label {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.group-join-link input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.group-join-link select,
+.group-join-link button,
+.group-join-link input {
+  padding: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.join-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.join-group-page .join-link-actions {
+  justify-content: center;
+}
+
+.join-group-page {
+  max-width: 560px;
+  padding: 2rem 0;
+}
+
+.hero .join-group-page h2 {
+  font-size: 2rem;
+}
+
+.join-group-page p {
+  margin: 1rem 0;
+}
+
+.group-join-link button:disabled,
+.join-group-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -4,6 +4,7 @@ import PdfViewer from "./PdfViewer"
 import CreateGroupButton from "./CreateGroupButton"
 import CommentViewer from "./CommentViewer"
 import CreateCommentButton from "./CreateCommentButton"
+import GroupJoinLinkPanel from "./GroupJoinLinkPanel"
 import EmailVerificationBanner from "./EmailVerificationBanner"
 
 function UserHome() {
@@ -47,6 +48,8 @@ function UserHome() {
               groupsRefresh={groupsRefresh}
             />
           </div>
+
+          {selectedGroup && <GroupJoinLinkPanel key={selectedGroup.id} group={selectedGroup} />}
 
           <div className="create-area">
             <CreateGroupButton onGroupCreated={() => setGroupsRefresh(value => !value)} />

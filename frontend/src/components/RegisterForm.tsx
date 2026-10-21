@@ -1,6 +1,7 @@
 import { useContext, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AuthContext } from "../auth/AuthContext"
+import { useJoinDestination } from "../auth/useJoinDestination"
 
 type RegisterFormProps = {
   loading: boolean,
@@ -9,6 +10,7 @@ type RegisterFormProps = {
 
 function RegisterForm({ loading, setLoading }: RegisterFormProps) {
   const navigate = useNavigate()
+  const { destination } = useJoinDestination()
   const auth = useContext(AuthContext)
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -42,7 +44,7 @@ function RegisterForm({ loading, setLoading }: RegisterFormProps) {
       auth.setAccessToken(data.accessToken)
       auth.setRefreshToken(data.refreshToken)
 
-      navigate("/")
+      navigate(destination)
     } finally {
       setLoading(false)
     }

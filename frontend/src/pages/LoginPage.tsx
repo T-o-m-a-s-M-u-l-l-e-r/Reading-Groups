@@ -2,8 +2,10 @@ import { Link } from "react-router-dom"
 import HomeLayout from "../components/HomeLayout"
 import LoginForm from "../components/LoginForm"
 import { useState } from "react"
+import { useJoinDestination } from "../auth/useJoinDestination"
 
 function LoginPage() {
+  const { query } = useJoinDestination()
   const [loading, setLoading] = useState(false)
 
   return (
@@ -16,7 +18,7 @@ function LoginPage() {
         <LoginForm setLoading={setLoading} loading={loading} />
 
         <p className="auth-switch">
-          Don't have an account? <Link to="/register">Register</Link>
+          Don't have an account? <Link to={`/register${query}`}>Register</Link>
         </p>
       </div>
     </HomeLayout>
