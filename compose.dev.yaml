@@ -1,0 +1,19 @@
+# Add after compose.yaml and compose.local.yaml for frontend live updates.
+services:
+  caddy:
+    build: !reset null
+    image: caddy:2
+    depends_on:
+      frontend:
+        condition: service_started
+    volumes:
+      - ./frontend/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/index.html:/app/index.html:ro

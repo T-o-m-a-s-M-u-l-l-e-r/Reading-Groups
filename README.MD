@@ -103,6 +103,36 @@ docker compose -f compose.yaml -f compose.local.yaml down
 
 Database data and uploaded files are preserved in Docker volumes.
 
+### Frontend Development with Live Updates
+
+Add the development override to run Vite behind Caddy:
+
+```bash
+docker compose -f compose.yaml -f compose.local.yaml -f compose.dev.yaml up -d --build
+```
+
+Open the same **http://localhost** address. Changes in `frontend/src`, `frontend/public`, and
+`frontend/index.html` appear without rebuilding. API requests and documentation restrictions still
+pass through Caddy. Vite has no published host port.
+
+Dependencies are installed when building the development image, not on every startup. After changing
+package files or frontend configuration, rebuild the `frontend` service:
+
+```bash
+docker compose -f compose.yaml -f compose.local.yaml -f compose.dev.yaml up -d --build frontend
+```
+
+Use the same three `-f` arguments for logs and shutdown. To return to production-style local testing,
+stop the development stack first, then use the original two-file command:
+
+```bash
+docker compose -f compose.yaml -f compose.local.yaml -f compose.dev.yaml down
+docker compose -f compose.yaml -f compose.local.yaml up -d --build
+```
+
+Volumes are preserved when switching modes. The existing local setup still builds and serves the
+static frontend for production-style testing.
+
 ### Running the Frontend Separately
 
 The frontend can also be started with Vite:

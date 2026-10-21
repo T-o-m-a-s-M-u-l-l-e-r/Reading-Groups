@@ -1,0 +1,15 @@
+{$APP_BASE_URL} {
+
+    @documentation path /swagger-ui /swagger-ui/* /swagger-ui.html /v3/api-docs /v3/api-docs/* /v3/api-docs.yaml
+    handle @documentation {
+        respond 404
+    }
+
+    handle /api/* {
+        reverse_proxy app:8080
+    }
+
+    handle {
+        reverse_proxy frontend:5173
+    }
+}
