@@ -161,4 +161,14 @@ class EmailVerificationServiceTest {
 		assertThrows(ResponseStatusException.class, () -> emailVerificationService.verify("invalid"));
 		verifyNoInteractions(userRepository, emailVerificationRepository);
 	}
+	@Test
+	void resendAvailabilityUsesConfiguredCooldown() {
+		Instant requestedAt = Instant.parse("2026-10-21T12:00:00Z");
+		EmailVerification verification = new EmailVerification(user, "hash", requestedAt,
+				requestedAt.plus(Duration.ofHours(24)));
+		when(emailVerificationRepository.findById(1)).thenReturn(Optional.of(verification));
+
+		assertEquals(requestedAt.plus(Duration.ofMinutes(2)), emailVerificationService.getResendAvailableAt(1));
+	}
+
 }

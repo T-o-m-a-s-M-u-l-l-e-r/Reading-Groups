@@ -97,6 +97,13 @@ public class EmailVerificationService {
 		});
 	}
 
+	@Transactional(readOnly = true)
+	public Instant getResendAvailableAt(int userId) {
+		return emailVerificationRepository.findById(userId)
+				.map(verification -> verification.getRequestedAt().plus(cooldown))
+				.orElse(null);
+	}
+
 	@Transactional
 	public void verify(String token) {
 		if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) {

@@ -4,19 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.muller_tomas.reading_groups.TestDataFactory;
+import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.exception.DuplicateUserException;
@@ -79,6 +89,31 @@ public class UserControllerTest {
 		mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(jsonInput))
 				.andExpect(status().isConflict())
 				.andDo(result -> {assertEquals(errorMessage, result.getResponse().getContentAsString());});
+	}
+
+	@AfterEach
+	public void clearSecurityContext() {
+		SecurityContextHolder.clearContext();
+	}
+
+	@Test
+	public void currentUser_returnsOnlyAuthenticatedAccountDetails() throws Exception {
+		SecurityContextHolder.getContext().setAuthentication(
+				new UsernamePasswordAuthenticationToken(42, null, List.of()));
+		Instant availableAt = Instant.parse("2026-10-21T12:00:00Z");
+		when(userService.getCurrentUser(42)).thenReturn(
+				new CurrentUserResponse(42, "reader", "reader@example.test", false, availableAt));
+
+		mockMvc.perform(get("/api/users/me").param("userId", "99"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-store"))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.email").value("reader@example.test"))
+				.andExpect(jsonPath("$.emailVerified").value(false))
+				.andExpect(jsonPath("$.emailVerificationResendAvailableAt").value(availableAt.toString()))
+				.andExpect(jsonPath("$.passwordHash").doesNotExist())
+				.andExpect(jsonPath("$.groups").doesNotExist());
+		verify(userService).getCurrentUser(42);
 	}
 
 }

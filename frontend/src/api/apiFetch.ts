@@ -1,11 +1,11 @@
-import { useContext } from "react"
+import { useCallback, useContext } from "react"
 import { AuthContext } from "../auth/AuthContext"
 
 export function useApi() {
     const auth = useContext(AuthContext)
 
     //gets called after login/registration
-async function apiFetch(resource : string, requestInit? : RequestInit) {
+const apiFetch = useCallback(async (resource : string, requestInit? : RequestInit) => {
 
     if (!auth) {
         console.log("apiFetch called with auth undefined")
@@ -38,7 +38,7 @@ async function apiFetch(resource : string, requestInit? : RequestInit) {
         return request
     }
     
-}
+}, [auth])
 
     return apiFetch
 }

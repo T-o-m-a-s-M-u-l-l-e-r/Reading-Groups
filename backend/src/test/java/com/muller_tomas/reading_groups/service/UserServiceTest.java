@@ -2,10 +2,15 @@ package com.muller_tomas.reading_groups.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.muller_tomas.reading_groups.TestDataFactory;
+import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.exception.DuplicateUserException;
@@ -93,6 +99,32 @@ public class UserServiceTest {
 		verify(userRepository, times(1)).findByUsername(registerRequest.getUsername());
 		verify(userRepository, times(1)).findByEmail(registerRequest.getEmail());
 		verify(userRepository, times(1)).save(createdUser);
+	}
+
+	@Test
+	public void currentUser_reportsUnverifiedStatusAndResendAvailability() {
+		User user = TestDataFactory.getSavedUser();
+		Instant availableAt = Instant.parse("2026-10-21T12:00:00Z");
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(emailVerificationService.getResendAvailableAt(user.getId())).thenReturn(availableAt);
+
+		CurrentUserResponse response = userService.getCurrentUser(user.getId());
+		assertEquals(user.getId(), response.getUserId());
+		assertEquals(user.getEmail(), response.getEmail());
+		assertFalse(response.isEmailVerified());
+		assertEquals(availableAt, response.getEmailVerificationResendAvailableAt());
+	}
+
+	@Test
+	public void currentUser_verifiedAccountHasNoResendAvailability() {
+		User user = TestDataFactory.getSavedUser();
+		user.setEmailVerifiedAt(Instant.now());
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+		CurrentUserResponse response = userService.getCurrentUser(user.getId());
+		assertTrue(response.isEmailVerified());
+		assertNull(response.getEmailVerificationResendAvailableAt());
+		verify(emailVerificationService, never()).getResendAvailableAt(user.getId());
 	}
 
 }

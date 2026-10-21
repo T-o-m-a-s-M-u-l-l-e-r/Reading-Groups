@@ -1,11 +1,15 @@
 package com.muller_tomas.reading_groups.controller;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.service.UserService;
@@ -23,6 +27,16 @@ public class UserController {
 	public UserController(UserService userService) {
 		this.userService = userService;
 	}
+
+	@GetMapping("/api/users/me")
+	@Operation(summary = "Get my account",
+			description = "Return the authenticated user's identity and email verification status.")
+	@ApiResponse(responseCode = "200", description = "Current account returned")
+	@ApiResponse(responseCode = "401", description = "Authentication required")
+	public ResponseEntity<CurrentUserResponse> getCurrentUser(@AuthenticationPrincipal Integer userId) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(userService.getCurrentUser(userId));
+	}
+
 	@PostMapping("/api/users")
 	@Operation(summary = "Register user", description = "Create an account using a username, email address and password; return access and refresh tokens.")
 	@ApiResponse(responseCode = "201", description = "Account created; token pair returned")

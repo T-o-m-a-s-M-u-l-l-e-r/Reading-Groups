@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.muller_tomas.reading_groups.model.RefreshSession;
 import com.muller_tomas.reading_groups.repository.RefreshSessionRepository;
 
+import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.exception.DuplicateUserException;
@@ -62,6 +63,13 @@ public class UserService {
 		refreshSessionRepository.save(new RefreshSession(createdUser, jwtTokenProvider.hashToken(refreshToken),
 				jwtTokenProvider.getExpiration(refreshToken)));
 		return new TokenPairResponse(accessToken, refreshToken);
+	}
+
+	@Transactional(readOnly = true)
+	public CurrentUserResponse getCurrentUser(int userId) {
+		User user = findUserByUserId(userId);
+		return new CurrentUserResponse(user.getId(), user.getUsername(), user.getEmail(), user.isEmailVerified(),
+				user.isEmailVerified() ? null : emailVerificationService.getResendAvailableAt(userId));
 	}
 
 	public User findUserByUsernameOrEmail(String login) throws UsernameNotFoundException {
