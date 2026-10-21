@@ -61,3 +61,26 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.join-group-preview {
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #f7f9f7;
+  overflow-wrap: anywhere;
+}
+
+.join-group-preview .group-icon {
+  width: 72px;
+  height: 72px;
+}
+
+.hero .join-group-preview h3 {
+  margin: 0.5rem 0;
+  font-size: 1.4rem;
+}
+
+.hero .join-group-preview p {
+  margin: 0.4rem 0;
+}

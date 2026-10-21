@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.muller_tomas.reading_groups.exception.InvalidTokenTypeException;
@@ -25,6 +26,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final List<String> publicPaths;
 	private final TokenExtractor tokenExtractor;
+	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
 	public JwtTokenFilter(JwtTokenProvider jwtTokenProvider, @Value("${app.public.paths}") List<String> publicPaths,
 			TokenExtractor tokenExtractor) {
@@ -37,13 +39,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getRequestURI();
 
-		return publicPaths.stream().anyMatch(publicPath -> {
-			if (publicPath.endsWith("/**")) {
-				String prefix = publicPath.substring(0, publicPath.length() - 3);
-				return path.startsWith(prefix);
-			}
-			return path.equals(publicPath);
-		});
+		return publicPaths.stream().anyMatch(publicPath -> pathMatcher.match(publicPath, path));
 	}
 
 	@Override

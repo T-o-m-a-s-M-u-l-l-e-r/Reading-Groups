@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
@@ -19,9 +20,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.muller_tomas.reading_groups.dto.CreateGroupJoinLinkRequest;
 import com.muller_tomas.reading_groups.dto.CreateGroupJoinLinkResponse;
 import com.muller_tomas.reading_groups.dto.GroupJoinLinkResponse;
+import com.muller_tomas.reading_groups.dto.GroupJoinPreviewResponse;
 import com.muller_tomas.reading_groups.dto.GroupResponse;
 import com.muller_tomas.reading_groups.exception.GroupNotFoundException;
 import com.muller_tomas.reading_groups.exception.InvalidGroupJoinLinkException;
+import com.muller_tomas.reading_groups.exception.StoredFileNotFoundException;
 import com.muller_tomas.reading_groups.model.Group;
 import com.muller_tomas.reading_groups.model.GroupJoinLink;
 import com.muller_tomas.reading_groups.repository.GroupJoinLinkRepository;
@@ -32,14 +35,17 @@ public class GroupJoinLinkService {
 	private final GroupRepository groupRepository;
 	private final GroupJoinLinkRepository groupJoinLinkRepository;
 	private final GroupService groupService;
+	private final GroupIconService groupIconService;
 	private final String joinPageUrl;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public GroupJoinLinkService(GroupRepository groupRepository, GroupJoinLinkRepository groupJoinLinkRepository,
-			GroupService groupService, @Value("${app.group-join-link.page-url}") String joinPageUrl) {
+			GroupService groupService, GroupIconService groupIconService,
+			@Value("${app.group-join-link.page-url}") String joinPageUrl) {
 		this.groupRepository = groupRepository;
 		this.groupJoinLinkRepository = groupJoinLinkRepository;
 		this.groupService = groupService;
+		this.groupIconService = groupIconService;
 		this.joinPageUrl = joinPageUrl;
 	}
 
@@ -96,6 +102,28 @@ public class GroupJoinLinkService {
 
 	@Transactional
 	public GroupResponse joinGroup(String token, int userId) {
+		GroupJoinLink link = requireValidLink(token);
+		// Retain the group lock until membership is saved in the same transaction.
+		return groupService.addMember(link.getGroup().getId(), userId);
+	}
+
+	@Transactional
+	public GroupJoinPreviewResponse getPreview(String token) {
+		Group group = requireValidLink(token).getGroup();
+		return new GroupJoinPreviewResponse(group.getGroupName(), group.getAdministratorUser().getUsername(),
+				group.getUsers().size(), group.getIconPath() != null);
+	}
+
+	@Transactional
+	public Resource getPreviewIcon(String token) {
+		Group group = requireValidLink(token).getGroup();
+		if (group.getIconPath() == null) {
+			throw new StoredFileNotFoundException("Group has no icon");
+		}
+		return groupIconService.load(group.getIconPath());
+	}
+
+	private GroupJoinLink requireValidLink(String token) {
 		if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) {
 			throw new InvalidGroupJoinLinkException();
 		}
@@ -113,8 +141,7 @@ public class GroupJoinLinkService {
 			throw new InvalidGroupJoinLinkException();
 		}
 
-		// This joins the same transaction, retaining the group lock until membership is saved.
-		return groupService.addMember(groupId, userId);
+		return groupJoinLink;
 	}
 
 	private Group lockGroup(int groupId) {

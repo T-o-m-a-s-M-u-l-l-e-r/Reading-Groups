@@ -1,6 +1,8 @@
 package com.muller_tomas.reading_groups.controller;
 
+import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +20,7 @@ import jakarta.validation.Valid;
 import com.muller_tomas.reading_groups.dto.CreateGroupJoinLinkRequest;
 import com.muller_tomas.reading_groups.dto.CreateGroupJoinLinkResponse;
 import com.muller_tomas.reading_groups.dto.GroupJoinLinkResponse;
+import com.muller_tomas.reading_groups.dto.GroupJoinPreviewResponse;
 import com.muller_tomas.reading_groups.dto.GroupResponse;
 import com.muller_tomas.reading_groups.service.GroupJoinLinkService;
 
@@ -52,6 +55,19 @@ public class GroupJoinLinkController {
 	public ResponseEntity<Void> revokeLink(@PathVariable int groupId, @AuthenticationPrincipal Integer userId) {
 		groupJoinLinkService.revokeLink(groupId, userId);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/api/groups/join/{token}/preview")
+	@Operation(summary = "Preview a group", description = "Requires a valid invitation link; login is optional.")
+	public ResponseEntity<GroupJoinPreviewResponse> getPreview(@PathVariable String token) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(groupJoinLinkService.getPreview(token));
+	}
+
+	@GetMapping("/api/groups/join/{token}/icon")
+	@Operation(summary = "Preview a group icon", description = "Requires a valid invitation link; login is optional.")
+	public ResponseEntity<Resource> getPreviewIcon(@PathVariable String token) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG)
+				.body(groupJoinLinkService.getPreviewIcon(token));
 	}
 
 	@PostMapping("/api/groups/join/{token}")
