@@ -76,6 +76,11 @@ Avoid unrelated formatting changes.
 - If formatter configuration conflicts with these instructions, point out
   the conflict rather than repeatedly undoing formatter changes.
 
+# Design principles
+
+- Prefer reusing shared infrastructure where appropriate, with specialized
+  services handling domain-specific logic.
+
 # Configuration principles
 
 - Give each setting one authoritative source; other layers should pass it
@@ -96,6 +101,7 @@ Avoid unrelated formatting changes.
 
 - Keep local and production behavior aligned where it matters, especially
   public routing and access restrictions.
+- Preserve production-style local testing alongside faster development modes.
 - Use the reverse proxy as the normal app entry point. Keep local developer
   access on separate localhost-only ports, without exposing those ports in
   production.
@@ -110,9 +116,27 @@ Avoid unrelated formatting changes.
 
 - Keep README setup instructions and configuration examples portable, using
   generic domains, accounts, credentials, and deployment paths.
+- Keep README content useful and durable. Avoid documenting incidental
+  implementation or visual choices.
 - Preserve screenshots and useful project presentation. Anonymize specific
   deployment details without removing unrelated content.
 - Make conservative, focused edits that follow existing conventions. Avoid
   unrelated cleanup or restructuring.
 - Treat brainstorming as discussion, not authorization to change files.
   Respect explicit limits on running builds, tests, services, or external actions.
+- When explaining code, focus on the specific code or change the user points to.
+- Keep answers concise and answer the specific question first.
+
+# Git commit principles
+
+- Agree on commit grouping and messages before committing, unless the user has
+  already supplied or approved them.
+- Keep commits focused. Stage shared files selectively when changes belong to
+  different commits.
+- Put prerequisite changes before features that depend on them. Aim for each
+  commit to build and pass tests independently.
+- Use concise commit titles. Add short bullets only where useful, with at most
+  three or four bullets; avoid excessive detail.
+- Commit only the requested scope and leave unrelated changes untouched.
+- After committing, report the commit hashes and whether uncommitted changes
+  remain.
