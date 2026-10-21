@@ -1,3 +1,5 @@
+import GroupIcon from "./GroupIcon"
+import "./GroupIcon.css"
 import type { Group } from "./GroupSelector"
 
 type GroupListItemProps = {
@@ -31,7 +33,10 @@ function GroupListItem({ group, setSelectedGroup, isSelected }: GroupListItemPro
         className={`group-list-item-button ${isSelected ? "selected" : ""}`}
         onClick={() => setSelectedGroup(group)}
       >
-        <h3>{group.groupName}</h3>
+        <div className="group-list-heading">
+          <GroupIcon key={group.id} groupId={group.id} hasIcon={group.hasIcon} />
+          <h3>{group.groupName}</h3>
+        </div>
 
         <p className="group-creator">
           Created by {group.administratorName}

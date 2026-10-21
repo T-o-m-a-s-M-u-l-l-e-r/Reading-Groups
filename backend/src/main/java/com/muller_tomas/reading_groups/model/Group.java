@@ -29,6 +29,9 @@ public class Group {
 	@Column(name = "reading_text_path", columnDefinition = "TEXT", nullable = false)
 	private String readingTextPath;
 
+	@Column(name = "icon_path", columnDefinition = "TEXT")
+	private String iconPath;
+
 	@Column(name = "group_name", length = 100, nullable = false)
 	private String groupName;
 	
@@ -97,6 +100,14 @@ public class Group {
 
 	public void setUsers(Set<User> users) {
 		this.users = users;
+	}
+
+	public String getIconPath() {
+		return iconPath;
+	}
+
+	public void setIconPath(String iconPath) {
+		this.iconPath = iconPath;
 	}
 
 	public String getGroupName() {

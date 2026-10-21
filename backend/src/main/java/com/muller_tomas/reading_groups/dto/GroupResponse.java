@@ -3,6 +3,7 @@ package com.muller_tomas.reading_groups.dto;
 import java.time.LocalDateTime;
 
 public class GroupResponse {
+	private boolean hasIcon;
 	private int id;
 	private int administratorUserId;
 	private LocalDateTime createdAt;
@@ -22,6 +23,14 @@ public class GroupResponse {
 	
 	public GroupResponse() {
 		
+	}
+
+	public boolean getHasIcon() {
+		return hasIcon;
+	}
+
+	public void setHasIcon(boolean hasIcon) {
+		this.hasIcon = hasIcon;
 	}
 
 	public int getId() {

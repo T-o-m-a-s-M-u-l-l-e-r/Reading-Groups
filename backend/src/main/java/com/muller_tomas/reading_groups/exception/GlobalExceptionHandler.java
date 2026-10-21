@@ -68,6 +68,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
 	}
 	
+	@ExceptionHandler(InvalidGroupIconException.class)
+	public ResponseEntity<String> handleInvalidGroupIcon(InvalidGroupIconException exception) {
+		return ResponseEntity.badRequest().body(exception.getMessage());
+	}
+
 	@ExceptionHandler(InvalidReadingTextException.class)
 	public ResponseEntity<?> handleInvalidReadingText(InvalidReadingTextException e) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

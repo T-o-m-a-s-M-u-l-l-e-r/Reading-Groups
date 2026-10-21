@@ -4,6 +4,7 @@ import GroupListItem from "./GroupListItem"
 
 export type Group = {
   id: number,
+  hasIcon: boolean,
   administratorUserId: number,
   createdAt: string,
   groupName: string,

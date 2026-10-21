@@ -12,6 +12,16 @@ public class GroupCreationRequest {
 	@NotNull(message ="Reading text cannot be empty")
 	private MultipartFile readingText;
 	
+	private MultipartFile icon;
+
+	public MultipartFile getIcon() {
+		return icon;
+	}
+
+	public void setIcon(MultipartFile icon) {
+		this.icon = icon;
+	}
+
 	public GroupCreationRequest() {
 		super();
 	}

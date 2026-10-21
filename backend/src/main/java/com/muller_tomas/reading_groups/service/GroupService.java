@@ -15,6 +15,7 @@ import com.muller_tomas.reading_groups.dto.MapperHelper;
 import com.muller_tomas.reading_groups.dto.UserResponse;
 import com.muller_tomas.reading_groups.exception.GroupNotFoundException;
 import com.muller_tomas.reading_groups.exception.UserNotFoundException;
+import com.muller_tomas.reading_groups.exception.StoredFileNotFoundException;
 import com.muller_tomas.reading_groups.model.Group;
 import com.muller_tomas.reading_groups.model.User;
 import com.muller_tomas.reading_groups.repository.GroupRepository;
@@ -27,14 +28,16 @@ public class GroupService {
 	private final MapperHelper mapperHelper;
 	private final ReadingTextService readingTextService;
 	private final UserService userService;
+	private final GroupIconService groupIconService;
 
 	public GroupService(GroupRepository groupRepository, UserRepository userRepository, MapperHelper mapperHelper,
-			ReadingTextService readingTextService, UserService userService) {
+			ReadingTextService readingTextService, UserService userService, GroupIconService groupIconService) {
 		this.groupRepository = groupRepository;
 		this.userRepository = userRepository;
 		this.mapperHelper = mapperHelper;
 		this.readingTextService = readingTextService;
 		this.userService = userService;
+		this.groupIconService = groupIconService;
 	}
 
 	public Set<GroupResponse> getUserGroups(int userId) throws UserNotFoundException {
@@ -69,16 +72,36 @@ public class GroupService {
 		return readingTextService.load(group.getReadingTextPath());
 	}
 
+	public Resource getIcon(int userId, int groupId) {
+		Group group = findGroupById(groupId);
+		User user = userService.findUserByUserId(userId);
+		if (!group.getUsers().contains(user)) {
+			throw new AuthorizationDeniedException("You do not have access to this group");
+		}
+		if (group.getIconPath() == null) {
+			throw new StoredFileNotFoundException("Group has no icon");
+		}
+		return groupIconService.load(group.getIconPath());
+	}
+
 	public GroupResponse createGroup(int userId, GroupCreationRequest groupCreationRequest)
 			throws UserNotFoundException {
 		User administratorUser = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException("User with specified id not found"));
 		String filePath = readingTextService.save(groupCreationRequest.getReadingText());
-		HashSet<User> users = new HashSet<User>();
-		users.add(administratorUser);
-		Group group = groupRepository
-				.save(new Group(filePath, administratorUser, groupCreationRequest.getGroupName(), users));
-		return mapperHelper.mapGroup(group);
+		String iconPath = null;
+		try {
+			iconPath = groupIconService.save(groupCreationRequest.getIcon());
+			HashSet<User> users = new HashSet<User>();
+			users.add(administratorUser);
+			Group group = new Group(filePath, administratorUser, groupCreationRequest.getGroupName(), users);
+			group.setIconPath(iconPath);
+			return mapperHelper.mapGroup(groupRepository.save(group));
+		} catch (RuntimeException exception) {
+			readingTextService.delete(filePath);
+			groupIconService.delete(iconPath);
+			throw exception;
+		}
 	}
 
 	@Transactional

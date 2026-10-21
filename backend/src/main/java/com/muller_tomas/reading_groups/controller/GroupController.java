@@ -57,6 +57,13 @@ public class GroupController {
 		        )
 		        .body(resource);
 	}
+	@GetMapping("/api/groups/{groupId}/icon")
+	@Operation(summary = "Get group icon", description = "Return the group icon; requires group membership.")
+	public ResponseEntity<Resource> getGroupIcon(@PathVariable int groupId,
+			@AuthenticationPrincipal Integer userId) {
+		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(groupService.getIcon(userId, groupId));
+	}
+
 	@GetMapping("/api/groups/{groupId}/members")
 	@Operation(summary = "Get group members", description = "Retrieve the members of a group accessible to the authenticated user.")
 	@ApiResponse(responseCode = "200", description = "Members returned")

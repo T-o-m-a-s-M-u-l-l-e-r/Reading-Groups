@@ -33,6 +33,7 @@ CREATE INDEX idx_refresh_sessions_expires_at
 CREATE TABLE GROUPS (
     group_id SERIAL PRIMARY KEY,
     reading_text_path TEXT NOT NULL,
+    icon_path TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     administrator_user_id INT NOT NULL,
     group_name VARCHAR(100) NOT NULL,

@@ -19,8 +19,11 @@ public class MapperHelper {
 	}
 
 	public GroupResponse mapGroup(Group group) {
-		return new GroupResponse(group.getId(), group.getAdministratorUser().getId(), group.getCreatedAt(),
+		GroupResponse response = new GroupResponse(group.getId(), group.getAdministratorUser().getId(),
+				group.getCreatedAt(),
 				group.getGroupName(), group.getUsers().size(), group.getAdministratorUser().getUsername());
+		response.setHasIcon(group.getIconPath() != null);
+		return response;
 	}
 
 	public Set<UserResponse> mapUsers(Set<User> users) {

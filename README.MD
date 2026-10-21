@@ -211,3 +211,7 @@ docker compose -f compose.yaml -f compose.prod.yaml up -d
 
 Update both Compose files on the VPS and deploy rebuilt images to apply these changes. CI pulls images
 but does not copy updated Compose files or `.env` to the VPS.
+
+### Group icons
+
+Groups can optionally include an icon at creation.
