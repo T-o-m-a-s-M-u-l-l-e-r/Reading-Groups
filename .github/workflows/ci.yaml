@@ -4,7 +4,26 @@ on:
   push:
   pull_request:
 
+# Serialize each branch's workflows, including image publication and deployment.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Relative to the SSH user's home directory; shared by file transfer and deployment.
+  DEPLOY_DIR: reading-groups-api
+
 jobs:
+  deployment_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check deployment script
+        run: |
+          bash -n deployment/deploy.sh
+          python3 -m unittest discover -s deployment/tests
+
   backend_test:
     runs-on: ubuntu-latest
 
@@ -91,10 +110,23 @@ jobs:
               ghcr.io/t-o-m-a-s-m-u-l-l-e-r/reading-groups-web:${{ github.sha }}
 
   deploy:
-    needs: [backend_build, frontend_build]
+    needs: [backend_build, frontend_build, deployment_test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy deployment files to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: compose.yaml,compose.prod.yaml,deployment/schema.sql,deployment/deploy.sh
+          target: ${{ env.DEPLOY_DIR }}
+          overwrite: true
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         with:
@@ -102,6 +134,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/reading-groups-api
-            docker compose -f compose.yaml -f compose.prod.yaml pull
-            docker compose -f compose.yaml -f compose.prod.yaml up -d
+            set -eu
+            cd "$HOME/${{ env.DEPLOY_DIR }}"
+            bash deployment/deploy.sh

@@ -177,7 +177,10 @@ The application can be deployed to a VPS using Docker Compose.
 
 GitHub Actions runs the backend tests, builds the frontend and backend Docker images, publishes them to GitHub Container Registry, and deploys updated images to the VPS.
 
-Configure the container image names, deployment directory, and repository secrets for your own environment.
+Configure the container image names, the workflow’s `DEPLOY_DIR` (relative to the SSH user’s home),
+and repository secrets for your own environment. Create that directory and its production `.env` on the
+VPS before the first deployment. The SSH account needs Docker access, and the VPS must be able to pull
+your GHCR images.
 
 `compose.yaml` defines shared services, volumes, and environment forwarding. Combine it with
 `compose.local.yaml` for local builds, Mailpit, and developer ports, or `compose.prod.yaml` for published
@@ -202,15 +205,30 @@ API_IMAGE=ghcr.io/your-account/reading-groups-api:latest
 
 Production sends through Resend SMTP on port 587 with authentication and required STARTTLS. Only
 Caddy publishes ports; the backend and database remain internal, and Mailpit is not included.
-Use both Compose files for deployment:
+The deployment script uses both production Compose files. To repeat the deployment manually after
+the files have been copied, run this from the deployment directory:
 
 ```bash
-docker compose -f compose.yaml -f compose.prod.yaml pull
-docker compose -f compose.yaml -f compose.prod.yaml up -d
+bash deployment/deploy.sh
 ```
 
-Update both Compose files on the VPS and deploy rebuilt images to apply these changes. CI pulls images
-but does not copy updated Compose files or `.env` to the VPS.
+GitHub Actions copies `compose.yaml`, `compose.prod.yaml`, `deployment/schema.sql`, and the deployment
+script from the deployed commit to the VPS. It then pulls images and starts the stack. The production
+`.env` stays on the VPS; new or changed environment values still require a manual update.
+
+Deployments are serialized per branch. When `schema.sql` changes, deployment stops the backend,
+drops and recreates the database’s `public` schema, and loads the new SQL in one transaction.
+**This erases all accounts, groups, and other application data.** This reset approach is intended for
+the current stage where data does not need preserving, rather than as a migration system.
+
+The last successfully applied checksum is saved as `deployment/.schema.sha256` on the VPS.
+**The first automated deployment also resets the schema**, because that file does not exist yet.
+Unchanged schemas preserve data. If SQL fails, the transaction rolls back, the checksum is not updated,
+and deployment stops with the backend stopped. Fix the SQL and redeploy.
+
+Database volumes, uploaded files, and Caddy certificate volumes are retained. Uploaded files may no
+longer have database references after a reset. Infrastructure changes such as new credentials, DNS,
+or PostgreSQL major-version upgrades still need explicit handling.
 
 ### Group icons
 
