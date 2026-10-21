@@ -9,15 +9,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.UUID;
 
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.muller_tomas.reading_groups.exception.FileStorageException;
-import com.muller_tomas.reading_groups.exception.InvalidReadingTextException;
 import com.muller_tomas.reading_groups.exception.InvalidResourceIdException;
 import com.muller_tomas.reading_groups.exception.StoredFileNotFoundException;
 
@@ -50,15 +46,16 @@ public class FileService {
 
 	}
 
-	private String savePdf(MultipartFile multipartFile) {
+	public String save(byte[] contents, String extension) {
 
+		validateExtension(extension);
 		while (true) {
 			String resourceId = UUID.randomUUID().toString();
-			Path newPath = storageRootPath.resolve(resourceId + ".pdf");
+			Path newPath = storageRootPath.resolve(resourceId + "." + extension);
 
 			try (OutputStream outputStream = Files.newOutputStream(newPath, StandardOpenOption.CREATE_NEW)) {
 
-				outputStream.write(multipartFile.getBytes());
+				outputStream.write(contents);
 				return resourceId;
 
 			} catch (FileAlreadyExistsException e) {
@@ -70,9 +67,10 @@ public class FileService {
 
 	}
 
-	public FileSystemResource loadPdf(String resourceId) {
+	public FileSystemResource load(String resourceId, String extension) {
+		validateExtension(extension);
 		validateResourceId(resourceId);
-		Path path = storageRootPath.resolve(resourceId + ".pdf");
+		Path path = storageRootPath.resolve(resourceId + "." + extension);
 
 		if (!Files.exists(path)) {
 			throw new StoredFileNotFoundException("File not found: " + resourceId);
@@ -93,28 +91,10 @@ public class FileService {
 		return new FileSystemResource(path);
 	}
 
-	public String saveReadingText(MultipartFile pdfFile) {
-
-		if (pdfFile == null || pdfFile.isEmpty()) {
-			throw new InvalidReadingTextException("Reading text is empty");
-		}
-
-		try (PDDocument document = Loader.loadPDF(pdfFile.getBytes())) {
-
-			if (document.isEncrypted()) {
-				throw new InvalidReadingTextException("The file is encrypted");
-			}
-
-		} catch (IOException e) {
-			throw new InvalidReadingTextException("File is not a valid pdf file");
-		}
-
-		return savePdf(pdfFile);
-	}
-
-	public void delete(String resourceId) {
+	public void delete(String resourceId, String extension) {
+		validateExtension(extension);
 		validateResourceId(resourceId);
-		Path filePath = storageRootPath.resolve(resourceId + ".pdf");
+		Path filePath = storageRootPath.resolve(resourceId + "." + extension);
 
 		try {
 			Files.deleteIfExists(filePath);
@@ -123,6 +103,12 @@ public class FileService {
 		}
 	}
 	
+	private void validateExtension(String extension) {
+		if (extension == null || !extension.matches("[a-z0-9]+")) {
+			throw new IllegalArgumentException("Invalid file extension");
+		}
+	}
+
 	private void validateResourceId(String resourceId) {
 		
 		try {

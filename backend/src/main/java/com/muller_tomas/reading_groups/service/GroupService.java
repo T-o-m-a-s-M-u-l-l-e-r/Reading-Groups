@@ -25,15 +25,15 @@ public class GroupService {
 	private final GroupRepository groupRepository;
 	private final UserRepository userRepository;
 	private final MapperHelper mapperHelper;
-	private final FileService fileService;
+	private final ReadingTextService readingTextService;
 	private final UserService userService;
 
 	public GroupService(GroupRepository groupRepository, UserRepository userRepository, MapperHelper mapperHelper,
-			FileService fileService, UserService userService) {
+			ReadingTextService readingTextService, UserService userService) {
 		this.groupRepository = groupRepository;
 		this.userRepository = userRepository;
 		this.mapperHelper = mapperHelper;
-		this.fileService = fileService;
+		this.readingTextService = readingTextService;
 		this.userService = userService;
 	}
 
@@ -66,14 +66,14 @@ public class GroupService {
 			throw new AuthorizationDeniedException("You do not have access to this group");
 		}
 
-		return fileService.loadPdf(group.getReadingTextPath());
+		return readingTextService.load(group.getReadingTextPath());
 	}
 
 	public GroupResponse createGroup(int userId, GroupCreationRequest groupCreationRequest)
 			throws UserNotFoundException {
 		User administratorUser = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException("User with specified id not found"));
-		String filePath = fileService.saveReadingText(groupCreationRequest.getReadingText());
+		String filePath = readingTextService.save(groupCreationRequest.getReadingText());
 		HashSet<User> users = new HashSet<User>();
 		users.add(administratorUser);
 		Group group = groupRepository
