@@ -1,7 +1,8 @@
-import { useContext, useEffect, useRef, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AuthContext } from "../auth/AuthContext"
 import { useJoinDestination } from "../auth/useJoinDestination"
+import ErrorDialog from "./ErrorDialog"
 import "./RegisterForm.css"
 
 type RegisterFormProps = {
@@ -31,7 +32,6 @@ function RegisterForm({ loading, setLoading }: RegisterFormProps) {
   const [rulesError, setRulesError] = useState("")
   const [rulesAttempt, setRulesAttempt] = useState(0)
   const [submissionError, setSubmissionError] = useState("")
-  const errorDialog = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -52,14 +52,6 @@ function RegisterForm({ loading, setLoading }: RegisterFormProps) {
       })
     return () => controller.abort()
   }, [rulesAttempt])
-
-  useEffect(() => {
-    if (submissionError) {
-      errorDialog.current?.showModal()
-    } else {
-      errorDialog.current?.close()
-    }
-  }, [submissionError])
 
   let usernameError = ""
   if (!username.trim()) {
@@ -184,12 +176,8 @@ function RegisterForm({ loading, setLoading }: RegisterFormProps) {
         </button>
       </form>
 
-      <dialog ref={errorDialog} className="registration-error-dialog" aria-labelledby="registration-error-title"
-        aria-describedby="registration-error-message" onClose={() => setSubmissionError("")}>
-        <h2 id="registration-error-title">Registration unsuccessful</h2>
-        <p id="registration-error-message">{submissionError}</p>
-        <button type="button" className="button button-primary" onClick={() => errorDialog.current?.close()}>Close</button>
-      </dialog>
+      <ErrorDialog title="Registration unsuccessful" message={submissionError}
+        onClose={() => setSubmissionError("")} />
     </>
   )
 }
