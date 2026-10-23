@@ -1,11 +1,14 @@
 package com.muller_tomas.reading_groups.exception;
 
-import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -93,15 +96,20 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
 	}
 	
+	@ExceptionHandler(ResponseStatusException.class)
+	public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException exception,
+			HttpServletRequest request) {
+		return ResponseEntity.status(exception.getStatusCode()).body(new ApiErrorResponse(
+				exception.getStatusCode().value(), exception.getReason(), request.getRequestURI()));
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException e) {
-	    String errorMessage = e.getBindingResult()
-	        .getFieldErrors()
-	        .stream()
-	        .map(error -> error.getField() + ": " + error.getDefaultMessage())
-	        .collect(Collectors.joining(", "));
-	    
-	    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+	public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException exception) {
+		Map<String, String> fieldErrors = new LinkedHashMap<>();
+		for (FieldError error : exception.getBindingResult().getFieldErrors()) {
+			fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage());
+		}
+		return ResponseEntity.badRequest().body(Map.of("message", "Check the input fields", "fieldErrors", fieldErrors));
 	}
 
 }

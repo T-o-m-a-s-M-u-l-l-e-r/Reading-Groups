@@ -2,23 +2,29 @@ package com.muller_tomas.reading_groups.dto;
 
 import java.util.Objects;
 
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import com.muller_tomas.reading_groups.validation.RegistrationRules;
 
 public class RegisterRequest {
 
 	@NotBlank(message = "Email cannot be empty")
 	@Email(message = "Email must be valid")
+	@Size(max = RegistrationRules.EMAIL_MAX_LENGTH, message = "Email must not exceed {max} characters")
 	private String email;
 
 	@NotBlank(message = "Username cannot be empty")
+	@Size(min = RegistrationRules.USERNAME_MIN_LENGTH, max = RegistrationRules.USERNAME_MAX_LENGTH,
+			message = "Username must be between {min} and {max} characters")
+	@Pattern(regexp = RegistrationRules.USERNAME_PATTERN,
+			message = "Username may contain only A-Z, a-z, digits, dots, underscores, and hyphens")
 	private String username;
 
 	@NotBlank(message = "Password cannot be empty")
-	@Size(min = 6, message = "Password must be at least 6 characters")
+	@Size(min = RegistrationRules.PASSWORD_MIN_LENGTH, message = "Password must be at least {min} characters")
 	private String password;
 
 	public RegisterRequest(String email, String username, String password) {

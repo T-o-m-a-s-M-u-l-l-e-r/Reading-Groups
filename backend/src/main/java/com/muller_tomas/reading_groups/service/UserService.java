@@ -1,14 +1,19 @@
 package com.muller_tomas.reading_groups.service;
 
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 import com.muller_tomas.reading_groups.model.RefreshSession;
 import com.muller_tomas.reading_groups.repository.RefreshSessionRepository;
 
 import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
+import com.muller_tomas.reading_groups.validation.RegistrationRules;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.exception.DuplicateUserException;
 import com.muller_tomas.reading_groups.exception.UserNotFoundException;
@@ -37,6 +42,11 @@ public class UserService {
 
 	@Transactional
 	public TokenPairResponse createUser(RegisterRequest registerRequest) throws DuplicateUserException {
+		if (registerRequest.getPassword().getBytes(StandardCharsets.UTF_8).length
+				> RegistrationRules.PASSWORD_MAX_UTF8_BYTES) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Password must not exceed " + RegistrationRules.PASSWORD_MAX_UTF8_BYTES + " UTF-8 bytes");
+		}
 
 		if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
 			throw new DuplicateUserException("There already exists a user with the specified username");

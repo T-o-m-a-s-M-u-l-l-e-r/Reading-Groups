@@ -6,12 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.mockito.Mock;
 import com.muller_tomas.reading_groups.repository.RefreshSessionRepository;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.muller_tomas.reading_groups.TestDataFactory;
 import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
@@ -76,6 +79,7 @@ public class UserServiceTest {
 	@Test
 	public void createUser_shouldReturnTokenPairResponse_whenRequestIsValid() {
 		RegisterRequest registerRequest = TestDataFactory.getRegisterRequest();
+		registerRequest.setPassword("é".repeat(36)); // Exactly 72 UTF-8 bytes.
 		String examplePaswordHash = TestDataFactory.examplePasswordHash;
 
 		when(userRepository.findByUsername(registerRequest.getUsername())).thenReturn(Optional.empty());
@@ -125,6 +129,18 @@ public class UserServiceTest {
 		assertTrue(response.isEmailVerified());
 		assertNull(response.getEmailVerificationResendAvailableAt());
 		verify(emailVerificationService, never()).getResendAvailableAt(user.getId());
+	}
+
+	@Test
+	public void passwordsAboveUtf8ByteLimitAreRejectedBeforeDatabaseOrHashing() {
+		for (String password : List.of("a".repeat(73), "é".repeat(37))) {
+			RegisterRequest request = TestDataFactory.getRegisterRequest();
+			request.setPassword(password);
+			ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+					() -> userService.createUser(request));
+			assertEquals(400, exception.getStatusCode().value());
+		}
+		verifyNoInteractions(userRepository, passwordEncoder, emailVerificationService, refreshSessionRepository);
 	}
 
 }

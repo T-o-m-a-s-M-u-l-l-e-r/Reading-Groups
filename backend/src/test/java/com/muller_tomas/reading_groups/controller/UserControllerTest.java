@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.muller_tomas.reading_groups.TestDataFactory;
 import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
+import com.muller_tomas.reading_groups.validation.RegistrationRules;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.exception.DuplicateUserException;
 import com.muller_tomas.reading_groups.service.UserService;
@@ -114,6 +118,61 @@ public class UserControllerTest {
 				.andExpect(jsonPath("$.passwordHash").doesNotExist())
 				.andExpect(jsonPath("$.groups").doesNotExist());
 		verify(userService).getCurrentUser(42);
+	}
+
+	@Test
+	public void registrationRulesExposeSharedLimits() throws Exception {
+		mockMvc.perform(get("/api/registration-rules"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.usernameMinLength").value(RegistrationRules.USERNAME_MIN_LENGTH))
+				.andExpect(jsonPath("$.usernameMaxLength").value(RegistrationRules.USERNAME_MAX_LENGTH))
+				.andExpect(jsonPath("$.usernamePattern").value(RegistrationRules.USERNAME_PATTERN))
+				.andExpect(jsonPath("$.emailMaxLength").value(RegistrationRules.EMAIL_MAX_LENGTH))
+				.andExpect(jsonPath("$.passwordMinLength").value(10))
+				.andExpect(jsonPath("$.passwordMaxUtf8Bytes").value(72));
+	}
+
+	@Test
+	public void invalidRegistrationFieldsReturnErrorsWithoutCallingService() throws Exception {
+		String[][] cases = {
+				{ "reader@example.test", "ab", "a".repeat(10), "username" },
+				{ "reader@example.test", "a".repeat(26), "a".repeat(10), "username" },
+				{ "reader@example.test", "reader name", "a".repeat(10), "username" },
+				{ "not-an-email", "reader", "a".repeat(10), "email" },
+				{ "a".repeat(64) + "@" + "b".repeat(31) + ".test", "reader", "a".repeat(10), "email" },
+				{ "reader@example.test", "reader", "a".repeat(9), "password" }
+		};
+		for (String[] values : cases) {
+			RegisterRequest request = new RegisterRequest(values[0], values[1], values[2]);
+			mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.fieldErrors." + values[3]).isString());
+		}
+		verify(userService, never()).createUser(any());
+	}
+
+	@Test
+	public void boundaryLengthsAndSimplePasswordsAreAccepted() throws Exception {
+		when(userService.createUser(any())).thenReturn(TestDataFactory.getTokenPairResponse());
+		String email = "a".repeat(64) + "@" + "b".repeat(30) + ".test";
+		for (String username : List.of("abc", "a".repeat(25), "reader_1.2-3")) {
+			RegisterRequest request = new RegisterRequest(email, username, "a".repeat(10));
+			mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isCreated());
+		}
+	}
+
+	@Test
+	public void serviceValidationFailureReturnsReadableBadRequest() throws Exception {
+		String message = "Password must not exceed 72 UTF-8 bytes";
+		when(userService.createUser(any())).thenThrow(new ResponseStatusException(
+				HttpStatus.BAD_REQUEST, message));
+		mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(TestDataFactory.getRegisterRequest())))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(message));
 	}
 
 }

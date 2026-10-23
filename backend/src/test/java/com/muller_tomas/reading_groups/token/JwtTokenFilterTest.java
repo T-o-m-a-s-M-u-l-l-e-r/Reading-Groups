@@ -12,12 +12,14 @@ public class JwtTokenFilterTest {
 	@Test
 	public void previewPathsSkipJwtWhileJoiningAndMemberResourcesStillRequireIt() {
 		JwtTokenFilter filter = new JwtTokenFilter(null,
-				List.of("/api/groups/join/*/preview", "/api/groups/join/*/icon", "/api/users", "/swagger-ui/**"), null);
+				List.of("/api/groups/join/*/preview", "/api/groups/join/*/icon", "/api/users",
+						"/api/registration-rules", "/swagger-ui/**"), null);
 		assertTrue(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/groups/join/token/preview")));
 		assertTrue(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/groups/join/token/icon")));
 		assertFalse(filter.shouldNotFilter(new MockHttpServletRequest("POST", "/api/groups/join/token")));
 		assertFalse(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/groups/7/icon")));
 		assertFalse(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/users/me")));
 		assertTrue(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/swagger-ui/index.html")));
+		assertTrue(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/registration-rules")));
 	}
 }

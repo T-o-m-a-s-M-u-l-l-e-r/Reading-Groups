@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.muller_tomas.reading_groups.dto.CurrentUserResponse;
 import com.muller_tomas.reading_groups.dto.RegisterRequest;
+import com.muller_tomas.reading_groups.dto.RegistrationRulesResponse;
 import com.muller_tomas.reading_groups.dto.TokenPairResponse;
 import com.muller_tomas.reading_groups.service.UserService;
 
@@ -26,6 +27,13 @@ public class UserController {
 
 	public UserController(UserService userService) {
 		this.userService = userService;
+	}
+
+	@GetMapping("/api/registration-rules")
+	@Operation(summary = "Get registration rules",
+			description = "Public input limits. Character lengths use UTF-16 units; the password byte limit uses UTF-8.")
+	public ResponseEntity<RegistrationRulesResponse> getRegistrationRules() {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new RegistrationRulesResponse());
 	}
 
 	@GetMapping("/api/users/me")
