@@ -128,6 +128,7 @@ public class UserControllerTest {
 				.andExpect(jsonPath("$.usernameMaxLength").value(RegistrationRules.USERNAME_MAX_LENGTH))
 				.andExpect(jsonPath("$.usernamePattern").value(RegistrationRules.USERNAME_PATTERN))
 				.andExpect(jsonPath("$.emailMaxLength").value(RegistrationRules.EMAIL_MAX_LENGTH))
+				.andExpect(jsonPath("$.emailPattern").value(RegistrationRules.EMAIL_PATTERN))
 				.andExpect(jsonPath("$.passwordMinLength").value(10))
 				.andExpect(jsonPath("$.passwordMaxUtf8Bytes").value(72));
 	}
@@ -139,6 +140,10 @@ public class UserControllerTest {
 				{ "reader@example.test", "a".repeat(26), "a".repeat(10), "username" },
 				{ "reader@example.test", "reader name", "a".repeat(10), "username" },
 				{ "not-an-email", "reader", "a".repeat(10), "email" },
+				{ "reader@example", "reader", "a".repeat(10), "email" },
+				{ "reader@example.", "reader", "a".repeat(10), "email" },
+				{ "reader@.example", "reader", "a".repeat(10), "email" },
+				{ "reader@example..com", "reader", "a".repeat(10), "email" },
 				{ "a".repeat(64) + "@" + "b".repeat(31) + ".test", "reader", "a".repeat(10), "email" },
 				{ "reader@example.test", "reader", "a".repeat(9), "password" }
 		};
@@ -173,6 +178,17 @@ public class UserControllerTest {
 				.content(objectMapper.writeValueAsString(TestDataFactory.getRegisterRequest())))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value(message));
+	}
+
+	@Test
+	public void dottedEmailDomainsAreAccepted() throws Exception {
+		when(userService.createUser(any())).thenReturn(TestDataFactory.getTokenPairResponse());
+		for (String email : List.of("reader@example.com", "reader+books@sub.example.com")) {
+			RegisterRequest request = new RegisterRequest(email, "reader", "a".repeat(10));
+			mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isCreated());
+		}
 	}
 
 }

@@ -7,6 +7,7 @@ public class RegistrationRulesResponse {
 	private final int usernameMaxLength = RegistrationRules.USERNAME_MAX_LENGTH;
 	private final String usernamePattern = RegistrationRules.USERNAME_PATTERN;
 	private final int emailMaxLength = RegistrationRules.EMAIL_MAX_LENGTH;
+	private final String emailPattern = RegistrationRules.EMAIL_PATTERN;
 	private final int passwordMinLength = RegistrationRules.PASSWORD_MIN_LENGTH;
 	private final int passwordMaxUtf8Bytes = RegistrationRules.PASSWORD_MAX_UTF8_BYTES;
 
@@ -27,6 +28,10 @@ public class RegistrationRulesResponse {
 
 	public int getEmailMaxLength() {
 		return emailMaxLength;
+	}
+
+	public String getEmailPattern() {
+		return emailPattern;
 	}
 
 	public int getPasswordMinLength() {

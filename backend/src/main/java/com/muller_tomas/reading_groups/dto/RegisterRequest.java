@@ -13,6 +13,7 @@ public class RegisterRequest {
 
 	@NotBlank(message = "Email cannot be empty")
 	@Email(message = "Email must be valid")
+	@Pattern(regexp = RegistrationRules.EMAIL_PATTERN, message = "Email must be valid")
 	@Size(max = RegistrationRules.EMAIL_MAX_LENGTH, message = "Email must not exceed {max} characters")
 	private String email;
 
